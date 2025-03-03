@@ -1,7 +1,34 @@
 name: comfyui
 
+volumes:
+  comfyui-models:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DOCKER_ROOT}/comfyui/models
+  comfyui-input:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DOCKER_ROOT}/comfyui/input
+  comfyui-output:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DOCKER_ROOT}/comfyui/output
+  comfyui-workflows:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DOCKER_ROOT}/comfyui/workflows
+
 services:
   comfyui:
+    container_name: comfyui
     build:
       context: .
       args:
@@ -9,6 +36,7 @@ services:
         PGID: ${PGID:-1000}
     security_opt:
       - no-new-privileges:true
+      - seccomp:unconfined
     ports:
       - "8188:8188"
     volumes:
@@ -18,28 +46,19 @@ services:
       - ./workflows:/comfy/workflows
       - /etc/localtime:/etc/localtime:ro
     environment:
+      # ROCm GPU Settings
       - HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION}
       - PYTORCH_ROCM_ARCH=${PYTORCH_ROCM_ARCH}
-      - HSA_ENABLE_SDMA=${HSA_ENABLE_SDMA}
-      - ROCR_VISIBLE_DEVICES=${ROCR_VISIBLE_DEVICES}
-      - HIP_VISIBLE_DEVICES=${HIP_VISIBLE_DEVICES}
+      - ROCR_VISIBLE_DEVICES=${ROCR_VISIBLE_DEVICES:-0}
+      - HIP_VISIBLE_DEVICES=${HIP_VISIBLE_DEVICES:-0}
+      # Memory Management
+      - HSA_ENABLE_SDMA=0
+      - GPU_MAX_HEAP_SIZE=95
+      - GPU_MAX_ALLOC_PERCENT=95
     devices:
       - /dev/kfd:/dev/kfd
       - /dev/dri:/dev/dri
     group_add:
       - video
-    shm_size: '8gb'
-    # Optional: Limit resources
-    # deploy:
-    #   resources:
-    #     limits:
-    #       memory: 16G
-    #     reservations:
-    #       memory: 8G
+    shm_size: '16gb'
     restart: unless-stopped
-
-volumes:
-  models:
-  input:
-  output:
-  workflows:
