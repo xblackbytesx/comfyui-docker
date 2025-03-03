@@ -1,65 +1,21 @@
-FROM ubuntu:22.04
+FROM rocm/pytorch:latest-release
 
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
-ENV ROCM_VERSION=5.7
+ENV HSA_OVERRIDE_GFX_VERSION=11.0.0
+ENV PYTORCH_ROCM_ARCH=gfx1100
+ENV HSA_ENABLE_SDMA=0
+ENV ROCR_VISIBLE_DEVICES=0
+ENV HIP_VISIBLE_DEVICES=0
 
-# Add ROCm repository
-RUN apt-get update && apt-get install -y wget gnupg2 && \
-    wget -q -O - https://repo.radeon.com/rocm/rocm.gpg.key | apt-key add - && \
-    echo "deb [arch=amd64] https://repo.radeon.com/rocm/apt/${ROCM_VERSION} ubuntu main" > /etc/apt/sources.list.d/rocm.list && \
-    echo 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' > /etc/apt/preferences.d/rocm-pin-600
-
-# Install system dependencies including minimal ROCm
-RUN apt-get update && apt-get install -y \
-    git \
-    python3.10 \
-    python3.10-venv \
-    python3-pip \
-    build-essential \
-    pkg-config \
-    libgl1-mesa-dev \
-    libglib2.0-0 \
-    rocm-libs \
-    rocm-hip-runtime \
-    rocm-hip-sdk \
-    rocminfo \
-    && rm -rf /var/lib/apt/lists/*
-
-# Add ROCm to PATH
-ENV PATH="/opt/rocm/bin:${PATH}"
-ENV LD_LIBRARY_PATH="/opt/rocm/lib:${LD_LIBRARY_PATH}"
-
-# Create and set working directory
 WORKDIR /comfy
 
 # Clone ComfyUI repository
 RUN git clone https://github.com/comfyanonymous/ComfyUI.git .
 
-# Create and activate virtual environment
-RUN python3 -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-
-# Install Python dependencies
-COPY install_torch.sh /install_torch.sh
-RUN chmod +x /install_torch.sh && \
-/install_torch.sh && \
-pip install --no-cache-dir -r requirements.txt && \
-pip install --no-cache-dir \
-    opencv-python-headless \
-    pillow \
-    transformers>=4.25.1 \
-    safetensors>=0.3.1 \
-    accelerate \
-    diffusers \
-    k-diffusion \
-    scipy \
-    pytorch_lightning \
-    einops \
-    torchsde \
-    kornia \
-    xformers
+# Install the basic required dependencies
+RUN pip3 uninstall -y torch torchvision
+RUN pip3 install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/rocm5.6
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Create necessary directories
 RUN mkdir -p /comfy/models/checkpoints && \
@@ -69,24 +25,21 @@ RUN mkdir -p /comfy/models/checkpoints && \
     mkdir -p /comfy/input && \
     mkdir -p /comfy/output
 
-# Set up entrypoint script
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-# Expose port
-EXPOSE 8188
-
-# Add user management
 ARG PUID=1000
 ARG PGID=1000
 
-# Create group and user
-RUN groupadd -g $PGID comfy && \
-    useradd -u $PUID -g $PGID -m -s /bin/bash comfy && \
-    chown -R comfy:comfy /comfy
+RUN groupadd -g $PGID comfy || true && \
+    useradd -u $PUID -g $PGID -m -s /bin/bash comfy || true && \
+    chown -R $PUID:$PGID /comfy
 
-# Switch to non-root user
-USER comfy
+EXPOSE 8188
 
-# Set entrypoint
-ENTRYPOINT ["/entrypoint.sh"]
+USER $PUID
+
+# Add a verification script
+RUN echo '#!/bin/bash\n\
+python3 -c "import torch; print(\"ROCm available:\", torch.cuda.is_available()); print(\"Device count:\", torch.cuda.device_count())" && \
+python3 main.py --listen 0.0.0.0 --port 8188' > /comfy/entrypoint.sh && \
+chmod +x /comfy/entrypoint.sh
+
+CMD ["/comfy/entrypoint.sh"]
