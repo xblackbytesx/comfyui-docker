@@ -1,2 +1,5 @@
+.env
 models
+input
 output
+workflows

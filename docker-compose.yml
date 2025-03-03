@@ -18,11 +18,11 @@ services:
       - ./workflows:/comfy/workflows
       - /etc/localtime:/etc/localtime:ro
     environment:
-      - HSA_OVERRIDE_GFX_VERSION=11.0.0
-      - PYTORCH_ROCM_ARCH=gfx1100
-      - HSA_ENABLE_SDMA=0
-      - ROCR_VISIBLE_DEVICES=0
-      - HIP_VISIBLE_DEVICES=0
+      - HSA_OVERRIDE_GFX_VERSION=${HSA_OVERRIDE_GFX_VERSION}
+      - PYTORCH_ROCM_ARCH=${PYTORCH_ROCM_ARCH}
+      - HSA_ENABLE_SDMA=${HSA_ENABLE_SDMA}
+      - ROCR_VISIBLE_DEVICES=${ROCR_VISIBLE_DEVICES}
+      - HIP_VISIBLE_DEVICES=${HIP_VISIBLE_DEVICES}
     devices:
       - /dev/kfd:/dev/kfd
       - /dev/dri:/dev/dri

@@ -1,12 +1,5 @@
 FROM rocm/pytorch:latest-release
 
-ENV PYTHONUNBUFFERED=1
-ENV HSA_OVERRIDE_GFX_VERSION=11.0.0
-ENV PYTORCH_ROCM_ARCH=gfx1100
-ENV HSA_ENABLE_SDMA=0
-ENV ROCR_VISIBLE_DEVICES=0
-ENV HIP_VISIBLE_DEVICES=0
-
 WORKDIR /comfy
 
 # Clone ComfyUI repository
@@ -14,7 +7,7 @@ RUN git clone https://github.com/comfyanonymous/ComfyUI.git .
 
 # Install the basic required dependencies
 RUN pip3 uninstall -y torch torchvision
-RUN pip3 install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/rocm5.6
+RUN pip3 install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm5.7
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Create necessary directories
