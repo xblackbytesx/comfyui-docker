@@ -25,7 +25,7 @@ USER $PUID
 # Add a verification script
 RUN echo '#!/bin/bash\n\
 python3 -c "import torch; print(\"ROCm available:\", torch.cuda.is_available()); print(\"Device count:\", torch.cuda.device_count())" && \
-python3 main.py --listen 0.0.0.0 --port 8188 --use-split-cross-attention --use-tiled-vae --vram-optimization=NORMAL' > /comfy/entrypoint.sh && \
+python3 main.py --listen 0.0.0.0 --port 8188 --use-split-cross-attention' > /comfy/entrypoint.sh && \
 chmod +x /comfy/entrypoint.sh
 
 CMD ["/comfy/entrypoint.sh"]
