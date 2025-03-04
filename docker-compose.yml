@@ -2,6 +2,7 @@ name: comfyui
 
 services:
   comfyui:
+    container_name: comfyui
     build:
       context: .
       args:

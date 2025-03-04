@@ -10,14 +10,6 @@ RUN pip3 uninstall -y torch torchvision
 RUN pip3 install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm5.7
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Create necessary directories
-RUN mkdir -p /comfy/models/checkpoints && \
-    mkdir -p /comfy/models/vae && \
-    mkdir -p /comfy/models/loras && \
-    mkdir -p /comfy/models/controlnet && \
-    mkdir -p /comfy/input && \
-    mkdir -p /comfy/output
-
 ARG PUID=1000
 ARG PGID=1000
 
